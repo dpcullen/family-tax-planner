@@ -1,311 +1,599 @@
+let currentLocation = 'us';
+
 document.addEventListener('DOMContentLoaded', () => {
-    initTabs();
+    initLocationToggle();
+    initSituationToggle();
     initCurrencyInputs();
-    initDeductionToggle();
     attachListeners();
     recalculate();
 });
 
-function initTabs() {
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+function initLocationToggle() {
+    document.querySelectorAll('.loc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.loc-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentLocation = btn.dataset.location;
+            document.querySelectorAll('.ca-only').forEach(el => {
+                el.classList.toggle('hidden', currentLocation !== 'ca');
+            });
+            recalculate();
         });
+    });
+}
+
+function initSituationToggle() {
+    const header = document.getElementById('situation-toggle');
+    const body = document.getElementById('situation-body');
+    header.addEventListener('click', () => {
+        header.classList.toggle('collapsed');
+        body.classList.toggle('collapsed');
     });
 }
 
 function initCurrencyInputs() {
     document.querySelectorAll('.currency-input').forEach(input => {
         input.addEventListener('focus', () => {
-            if (input.value === '0') input.value = '';
+            const raw = input.value.replace(/[^0-9.]/g, '');
+            input.value = raw === '0' ? '' : raw;
         });
         input.addEventListener('blur', () => {
             const raw = input.value.replace(/[^0-9.]/g, '');
-            const num = parseFloat(raw) || 0;
-            input.value = formatNumber(num);
+            input.value = fmt(parseFloat(raw) || 0);
         });
         input.addEventListener('input', () => {
             const pos = input.selectionStart;
-            const oldLen = input.value.length;
-            const raw = input.value.replace(/[^0-9.]/g, '');
-            input.value = raw;
+            input.value = input.value.replace(/[^0-9.]/g, '');
             recalculate();
         });
-    });
-}
-
-function initDeductionToggle() {
-    document.querySelectorAll('input[name="deduction-type"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            const itemizedSection = document.getElementById('itemized-section');
-            if (radio.value === 'itemized') {
-                itemizedSection.classList.remove('hidden');
-            } else {
-                itemizedSection.classList.add('hidden');
-            }
-            recalculate();
-        });
+        input.value = fmt(parseFloat(input.value) || 0);
     });
 }
 
 function attachListeners() {
-    const allInputs = document.querySelectorAll('input, select');
-    allInputs.forEach(input => {
-        input.addEventListener('change', recalculate);
-        if (input.type === 'number') {
-            input.addEventListener('input', recalculate);
-        }
+    document.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('change', recalculate);
+        if (el.type === 'number') el.addEventListener('input', recalculate);
     });
 }
 
-function getVal(id) {
+function val(id) {
     const el = document.getElementById(id);
-    if (!el) return 0;
-    const raw = el.value.replace(/[^0-9.]/g, '');
-    return parseFloat(raw) || 0;
+    return parseFloat((el?.value || '0').replace(/[^0-9.]/g, '')) || 0;
 }
 
-function getIntVal(id) {
-    return parseInt(document.getElementById(id).value) || 0;
+function intVal(id) {
+    return parseInt(document.getElementById(id)?.value) || 0;
 }
 
-function formatCurrency(amount) {
-    const abs = Math.abs(amount);
-    const formatted = abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    return (amount < 0 ? '-$' : '$') + formatted;
+function fmt(n) {
+    return Math.round(n).toLocaleString('en-US');
 }
 
-function formatNumber(num) {
-    return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function fmtC(n) {
+    const sym = currentLocation === 'ca' ? 'C$' : '$';
+    return (n < 0 ? '-' : '') + sym + fmt(Math.abs(n));
 }
 
 function recalculate() {
-    const deductionType = document.querySelector('input[name="deduction-type"]:checked').value;
-    const filingStatus = document.getElementById('filing-status').value;
+    const income = val('household-income');
+    const spouseIncome = val('spouse-income');
+    const numChildren = intVal('num-children');
+    const age = intVal('your-age');
+    const matchPct = val('employer-match') / 100;
+    const matchCap = val('match-cap') / 100;
+    const hasHDHP = document.getElementById('has-hdhp').value === 'yes';
+    const hasMegaBackdoor = document.getElementById('has-mega-backdoor').value === 'yes';
+    const isFirstHomeBuyer = document.getElementById('is-first-home-buyer').value === 'yes';
+    const timeline = document.getElementById('risk-tolerance').value;
 
-    const inputs = {
-        filingStatus,
-        numDependents: getIntVal('num-dependents'),
-        numOtherDependents: getIntVal('num-other-dependents'),
-        wages1: getVal('wages-1'),
-        wages2: getVal('wages-2'),
-        selfEmploymentIncome: getVal('self-employment-income'),
-        selfEmploymentExpenses: getVal('self-employment-expenses'),
-        interestIncome: getVal('interest-income'),
-        dividendIncome: getVal('dividend-income'),
-        shortTermGains: getVal('short-term-gains'),
-        longTermGains: getVal('long-term-gains'),
-        otherIncome: getVal('other-income'),
-        deductionType,
-        mortgageInterest: getVal('mortgage-interest'),
-        saltDeduction: getVal('salt-deduction'),
-        charitableCash: getVal('charitable-cash'),
-        charitableNonCash: getVal('charitable-noncash'),
-        medicalExpenses: getVal('medical-expenses'),
-        otherItemized: getVal('other-itemized'),
-        studentLoanInterest: getVal('student-loan-interest'),
-        hsaContribution: getVal('hsa-contribution'),
-        educatorExpenses: getVal('educator-expenses'),
-        dependentCareExpenses: getVal('dependent-care-expenses'),
-        educationExpenses: getVal('education-expenses'),
-        numStudents: getIntVal('num-students'),
-        evCredit: getVal('ev-credit'),
-        energyCredit: getVal('energy-credit'),
-        traditional401k: getVal('traditional-401k'),
-        spouse401k: getVal('spouse-401k'),
-        roth401k: getVal('roth-401k'),
-        spouseRoth401k: getVal('spouse-roth-401k'),
-        traditionalIRA: getVal('traditional-ira'),
-        spouseIRA: getVal('spouse-ira'),
-        rothIRA: getVal('roth-ira'),
-        spouseRothIRA: getVal('spouse-roth-ira'),
-        federalWithheld: getVal('federal-withheld'),
-        estimatedPayments: getVal('estimated-payments')
-    };
+    const ctx = { income, spouseIncome, numChildren, age, matchPct, matchCap, hasHDHP, hasMegaBackdoor, isFirstHomeBuyer, timeline };
 
-    const result = calculateTax(inputs);
-    updateDashboard(result);
-    updateDeductions(result, filingStatus);
-    updateCredits(result);
-    updateRetirement(result);
-    updateWithholding(result);
-    updateBreakdown(result, filingStatus);
-}
-
-function updateDashboard(r) {
-    document.getElementById('sum-total-tax').textContent = formatCurrency(r.totalTax);
-    document.getElementById('sum-effective-rate').textContent = r.effectiveRate.toFixed(1) + '% effective rate';
-
-    document.getElementById('sum-take-home').textContent = formatCurrency(r.takeHome);
-    document.getElementById('sum-take-home-monthly').textContent = formatCurrency(r.takeHome / 12) + ' / month';
-
-    document.getElementById('sum-credits').textContent = formatCurrency(r.totalCredits);
-    const creditParts = [];
-    if (r.ctc > 0) creditParts.push('CTC');
-    if (r.cdcc > 0) creditParts.push('CDCC');
-    if (r.eitc > 0) creditParts.push('EITC');
-    if (r.aoc > 0) creditParts.push('AOC');
-    if (r.otherCredits > 0) creditParts.push('Other');
-    document.getElementById('sum-credits-detail').textContent = creditParts.length > 0 ? creditParts.join(' + ') : 'No credits applied';
-
-    const refundEl = document.getElementById('sum-refund');
-    const refundDetailEl = document.getElementById('sum-refund-detail');
-    const refundCard = refundEl.closest('.summary-card');
-
-    if (r.totalPaid === 0 && r.totalTax === 0) {
-        refundEl.textContent = '$0';
-        refundDetailEl.textContent = 'Enter withholdings to check';
-        refundCard.style.borderLeftColor = 'var(--warning)';
-    } else if (r.refundOrOwe >= 0) {
-        refundEl.textContent = '+' + formatCurrency(r.refundOrOwe);
-        refundDetailEl.textContent = 'Estimated refund';
-        refundCard.style.borderLeftColor = 'var(--success)';
+    if (currentLocation === 'us') {
+        renderUS(ctx);
     } else {
-        refundEl.textContent = formatCurrency(r.refundOrOwe);
-        refundDetailEl.textContent = 'Estimated amount owed';
-        refundCard.style.borderLeftColor = 'var(--danger)';
+        renderCA(ctx);
     }
 }
 
-function updateDeductions(r, status) {
-    document.getElementById('standard-deduction-amount').textContent = formatCurrency(r.standardDeduction);
-    document.getElementById('itemized-total-display').textContent = formatCurrency(r.itemizedTotal);
+// ─── US RENDERING ───
 
-    const rec = document.getElementById('deduction-recommendation');
-    if (r.deductionType === 'itemized' && r.itemizedTotal < r.standardDeduction) {
-        rec.innerHTML = '<strong>Heads up:</strong> Your itemized deductions (' + formatCurrency(r.itemizedTotal) + ') are less than the standard deduction (' + formatCurrency(r.standardDeduction) + '). Switching to standard would save you more.';
-        rec.style.display = 'block';
-    } else if (r.deductionType === 'standard' && r.itemizedTotal > r.standardDeduction) {
-        rec.innerHTML = '<strong>Tip:</strong> Your itemized deductions would be ' + formatCurrency(r.itemizedTotal) + ', which is more than the standard deduction. Consider switching to itemized.';
-        rec.style.display = 'block';
-    } else {
-        rec.innerHTML = '<strong>Recommendation:</strong> Based on your inputs, the ' + r.deductionType + ' deduction is the better choice.';
-        rec.style.display = 'block';
-    }
+function renderUS(ctx) {
+    const d = TAX.us;
+    const marginalRate = getMarginalRate(ctx.income - d.standardDeduction, d.brackets);
+    const vehicles = d.vehicles;
+
+    const yourContribution = ctx.income * ctx.matchCap;
+    const matchAmount = Math.min(yourContribution * ctx.matchPct, ctx.income * ctx.matchCap * ctx.matchPct);
+    const megaSpace = ctx.hasMegaBackdoor ? Math.max(0, vehicles.trad401k.totalLimit - vehicles.trad401k.limit - matchAmount) : 0;
+
+    const shelterSpace = vehicles.trad401k.limit
+        + vehicles.rothIRA.limit * 2
+        + (ctx.hasHDHP ? vehicles.hsa.limit : 0)
+        + (ctx.hasMegaBackdoor ? megaSpace : 0);
+
+    const potentialSavings = vehicles.trad401k.limit * marginalRate
+        + (ctx.hasHDHP ? vehicles.hsa.limit * marginalRate : 0);
+
+    document.getElementById('marginal-rate').textContent = (marginalRate * 100).toFixed(0) + '%';
+    document.getElementById('marginal-detail').textContent = 'Federal (WA has no state income tax)';
+    document.getElementById('total-shelter').textContent = fmtC(shelterSpace);
+    document.getElementById('shelter-detail').textContent = 'Annual tax-advantaged space';
+    document.getElementById('potential-savings').textContent = fmtC(potentialSavings);
+    document.getElementById('free-money').textContent = fmtC(matchAmount);
+    document.getElementById('free-money-detail').textContent = 'Employer 401(k) match';
+
+    renderPriority(buildUSPriority(ctx, d, marginalRate, matchAmount, megaSpace));
+    renderVehicles(d.vehicles, ctx, 'us', marginalRate);
+    renderCompareDropdowns(d.vehicles);
+    renderTaxEstimate(ctx, 'us');
 }
 
-function updateCredits(r) {
-    document.getElementById('ctc-value').textContent = formatCurrency(r.ctc);
-    document.getElementById('cdcc-value').textContent = formatCurrency(r.cdcc);
-    document.getElementById('eitc-value').textContent = formatCurrency(r.eitc);
-    document.getElementById('aoc-value').textContent = formatCurrency(r.aoc);
-    document.getElementById('other-credits-value').textContent = formatCurrency(r.otherCredits);
-}
+function buildUSPriority(ctx, d, marginalRate, matchAmount, megaSpace) {
+    const steps = [];
+    const v = d.vehicles;
 
-function updateRetirement(r) {
-    document.querySelector('#impact-401k .impact-value').textContent = formatCurrency(r.trad401kSavings);
-    document.querySelector('#impact-ira .impact-value').textContent = formatCurrency(r.tradIRASavings);
-
-    const tip = document.getElementById('retirement-tip');
-    if (r.marginalRate >= 0.24) {
-        tip.textContent = 'At your ' + (r.marginalRate * 100).toFixed(0) + '% marginal rate, Traditional (pre-tax) contributions save you significantly. Every $1,000 in a Traditional 401(k) saves you $' + (r.marginalRate * 1000).toFixed(0) + ' in taxes this year.';
-    } else if (r.marginalRate >= 0.12) {
-        tip.textContent = 'At your ' + (r.marginalRate * 100).toFixed(0) + '% marginal rate, consider a mix of Traditional and Roth contributions. Roth is great if you expect your income (and tax rate) to be higher in retirement.';
-    } else {
-        tip.textContent = 'At your current low tax rate, Roth contributions may be the better choice — you pay a small amount of tax now, but all future growth and withdrawals are tax-free.';
-    }
-}
-
-function updateWithholding(r) {
-    const barPaid = document.getElementById('bar-paid');
-    const barOwed = document.getElementById('bar-owed');
-    const summary = document.getElementById('withholding-summary');
-
-    if (r.totalTax === 0 && r.totalPaid === 0) {
-        barPaid.style.width = '0%';
-        barPaid.querySelector('span').textContent = '';
-        barOwed.querySelector('span').textContent = 'Enter income and withholding';
-        summary.innerHTML = '<p>Enter your withholding amounts above to see if you\'re on track.</p>';
-        return;
+    if (matchAmount > 0) {
+        steps.push({
+            name: '401(k) up to employer match',
+            reason: 'This is free money — ' + (ctx.matchPct * 100) + '% match on your contributions. Always max this first.',
+            amount: fmtC(Math.min(ctx.income * ctx.matchCap, v.trad401k.limit))
+        });
     }
 
-    const total = Math.max(r.totalTax, r.totalPaid, 1);
-    const paidPct = Math.min((r.totalPaid / total) * 100, 100);
-    barPaid.style.width = paidPct + '%';
-    barPaid.querySelector('span').textContent = paidPct > 15 ? 'Paid: ' + formatCurrency(r.totalPaid) : '';
-    barOwed.querySelector('span').textContent = 'Tax: ' + formatCurrency(r.totalTax);
-
-    if (r.refundOrOwe >= 0) {
-        summary.innerHTML = '<p>You\'re on track for a <span class="refund">refund of ' + formatCurrency(r.refundOrOwe) + '</span></p>';
-    } else {
-        summary.innerHTML = '<p>You may <span class="owe">owe ' + formatCurrency(Math.abs(r.refundOrOwe)) + '</span> at tax time</p>';
+    if (ctx.hasHDHP) {
+        steps.push({
+            name: 'Max your HSA',
+            reason: 'Triple-tax-free. The single best tax vehicle in the US. Invest it and let it grow.',
+            amount: fmtC(v.hsa.limit)
+        });
     }
-}
 
-function updateBreakdown(r, status) {
-    setText('bk-gross-income', 'Gross Income', formatCurrency(r.grossIncome));
-    setText('bk-adjustments', 'Adjustments (Above-the-Line)', '-' + formatCurrency(r.adjustments));
-    setText('bk-agi', 'Adjusted Gross Income (AGI)', formatCurrency(r.agi));
-
-    const deductionLabel = r.deductionType === 'itemized' ? 'Itemized Deduction' : 'Standard Deduction';
-    setText('bk-deduction', deductionLabel, '-' + formatCurrency(r.deduction));
-    setText('bk-qbi', 'QBI Deduction', '-' + formatCurrency(r.qbiDeduction));
-    document.getElementById('bk-qbi').style.display = r.qbiDeduction > 0 ? 'flex' : 'none';
-
-    setText('bk-taxable-income', 'Taxable Income', formatCurrency(r.taxableIncome));
-
-    const bracketContainer = document.getElementById('bracket-rows');
-    bracketContainer.innerHTML = '';
-    r.bracketDetails.forEach(b => {
-        const row = document.createElement('div');
-        row.className = 'breakdown-row bracket-row';
-        const maxLabel = b.max === Infinity ? '+' : formatCurrency(b.max);
-        row.innerHTML = '<span>' + (b.rate * 100).toFixed(0) + '% on ' + formatCurrency(b.income) + '</span><span>' + formatCurrency(b.tax) + '</span>';
-        bracketContainer.appendChild(row);
+    steps.push({
+        name: 'Max Roth IRA (both spouses)',
+        reason: ctx.income > v.rothIRA.incomePhaseout.end
+            ? 'Your income exceeds the limit — use the Backdoor Roth strategy.'
+            : 'Tax-free growth forever. Flexible withdrawals. No RMDs.',
+        amount: fmtC(v.rothIRA.limit * 2)
     });
 
-    setText('bk-income-tax', 'Income Tax (before credits)', formatCurrency(r.incomeTax));
-    setText('bk-se-tax', 'Self-Employment Tax', formatCurrency(r.seTax));
-    document.getElementById('bk-se-tax').style.display = r.seTax > 0 ? 'flex' : 'none';
-    setText('bk-ltcg-tax', 'Long-Term Capital Gains Tax', formatCurrency(r.ltcgTax));
-    document.getElementById('bk-ltcg-tax').style.display = r.ltcgTax > 0 ? 'flex' : 'none';
-    setText('bk-niit', 'Net Investment Income Tax (3.8%)', formatCurrency(r.niit));
-    document.getElementById('bk-niit').style.display = r.niit > 0 ? 'flex' : 'none';
-
-    const creditsRow = document.getElementById('bk-credits');
-    creditsRow.querySelector('span:last-child').textContent = '-' + formatCurrency(r.totalCredits);
-    creditsRow.querySelector('span:last-child').className = 'credit-amount';
-
-    setText('bk-total-tax', 'Total Federal Tax', formatCurrency(r.totalTax));
-    setText('bk-marginal-rate', 'Marginal Tax Rate', (r.marginalRate * 100).toFixed(0) + '%');
-    setText('bk-effective-rate', 'Effective Tax Rate', r.effectiveRate.toFixed(1) + '%');
-
-    updateBracketChart(r);
-}
-
-function setText(id, label, value) {
-    const el = document.getElementById(id);
-    el.querySelector('span:first-child').textContent = label;
-    el.querySelector('span:last-child').textContent = value;
-}
-
-function updateBracketChart(r) {
-    const chart = document.getElementById('bracket-chart');
-    chart.innerHTML = '';
-
-    if (r.bracketDetails.length === 0) return;
-
-    const maxIncome = Math.max(...r.bracketDetails.map(b => b.income));
-
-    r.bracketDetails.forEach(b => {
-        const row = document.createElement('div');
-        row.className = 'bracket-bar-row';
-
-        const label = document.createElement('span');
-        label.className = 'bracket-rate-label';
-        label.textContent = (b.rate * 100).toFixed(0) + '%';
-
-        const bar = document.createElement('div');
-        bar.className = 'bracket-bar rate-' + (b.rate * 100).toFixed(0);
-        const width = maxIncome > 0 ? Math.max(2, (b.income / maxIncome) * 100) : 0;
-        bar.style.width = width + '%';
-        bar.textContent = formatCurrency(b.tax);
-
-        row.appendChild(label);
-        row.appendChild(bar);
-        chart.appendChild(row);
+    steps.push({
+        name: 'Max 401(k) to full employee limit',
+        reason: marginalRate >= 0.24
+            ? 'At your ' + (marginalRate * 100) + '% rate, the tax deduction is very valuable. Consider Traditional.'
+            : 'Consider Roth 401(k) at your ' + (marginalRate * 100) + '% rate — pay tax now at a lower rate.',
+        amount: fmtC(v.trad401k.limit)
     });
+
+    if (ctx.numChildren > 0) {
+        steps.push({
+            name: '529 for each child',
+            reason: 'Tax-free growth for education. Start early for maximum compounding. Helps reduce WA estate tax exposure.',
+            amount: fmtC(ctx.numChildren * 10000) + '+/yr suggested'
+        });
+    }
+
+    if (ctx.hasMegaBackdoor && megaSpace > 0) {
+        steps.push({
+            name: 'Mega Backdoor Roth',
+            reason: 'After maxing everything else, shelter up to ' + fmtC(megaSpace) + ' more in Roth. Enormous long-term benefit.',
+            amount: fmtC(megaSpace)
+        });
+    }
+
+    if (ctx.income > 500000) {
+        steps.push({
+            name: 'Consider irrevocable trust',
+            reason: 'WA estate tax starts at $3M — much lower than federal. Start planning early to shift assets out of your estate.',
+            amount: 'Consult attorney'
+        });
+    }
+
+    return steps;
+}
+
+// ─── CANADA RENDERING ───
+
+function renderCA(ctx) {
+    const d = TAX.ca;
+    const fedRate = getMarginalRate(ctx.income - d.federalPersonalAmount, d.federalBrackets);
+    const provRate = getMarginalRate(ctx.income - d.provincialPersonalAmount, d.provincialBrackets);
+    const combinedRate = fedRate + provRate;
+
+    const vehicles = d.vehicles;
+    const rrspLimit = Math.min(ctx.income * vehicles.rrsp.limitPercent, vehicles.rrsp.limit);
+    const cesgPerChild = vehicles.resp.cesgMax;
+    const totalCESG = cesgPerChild * ctx.numChildren;
+
+    const shelterSpace = rrspLimit + vehicles.tfsa.limit * 2
+        + (ctx.isFirstHomeBuyer ? vehicles.fhsa.limit : 0)
+        + vehicles.resp.limit * ctx.numChildren;
+
+    const potentialSavings = rrspLimit * combinedRate
+        + (ctx.isFirstHomeBuyer ? vehicles.fhsa.limit * combinedRate : 0);
+
+    document.getElementById('marginal-rate').textContent = (combinedRate * 100).toFixed(1) + '%';
+    document.getElementById('marginal-detail').textContent = 'Federal ' + (fedRate * 100).toFixed(1) + '% + BC ' + (provRate * 100).toFixed(1) + '%';
+    document.getElementById('total-shelter').textContent = fmtC(shelterSpace);
+    document.getElementById('shelter-detail').textContent = 'Annual tax-advantaged space';
+    document.getElementById('potential-savings').textContent = fmtC(potentialSavings);
+    document.getElementById('free-money').textContent = fmtC(totalCESG);
+    document.getElementById('free-money-detail').textContent = 'CESG grants (' + fmtC(cesgPerChild) + '/child)';
+
+    renderPriority(buildCAPriority(ctx, d, combinedRate, rrspLimit, totalCESG));
+    renderVehicles(d.vehicles, ctx, 'ca', combinedRate);
+    renderCompareDropdowns(d.vehicles);
+    renderTaxEstimate(ctx, 'ca');
+}
+
+function buildCAPriority(ctx, d, combinedRate, rrspLimit, totalCESG) {
+    const steps = [];
+    const v = d.vehicles;
+
+    if (ctx.numChildren > 0) {
+        steps.push({
+            name: 'RESP — $2,500/child/year',
+            reason: 'Free 20% government match (CESG). Instant guaranteed return of ' + fmtC(totalCESG) + '/year. Don\'t leave free money on the table.',
+            amount: fmtC(v.resp.limit * ctx.numChildren) + ' → get ' + fmtC(totalCESG) + ' free'
+        });
+    }
+
+    if (ctx.isFirstHomeBuyer) {
+        steps.push({
+            name: 'Max FHSA',
+            reason: 'Double tax benefit: deduction now + tax-free withdrawal for home. The best deal in Canadian tax law.',
+            amount: fmtC(v.fhsa.limit)
+        });
+    }
+
+    if (combinedRate >= 0.29) {
+        steps.push({
+            name: 'Max RRSP',
+            reason: 'At your ' + (combinedRate * 100).toFixed(1) + '% combined rate, the deduction saves you ' + fmtC(rrspLimit * combinedRate) + ' in taxes.',
+            amount: fmtC(rrspLimit)
+        });
+        steps.push({
+            name: 'Max TFSA (both spouses)',
+            reason: 'After RRSP, shelter more in TFSA. Completely flexible — withdraw anytime, tax-free, for any reason.',
+            amount: fmtC(v.tfsa.limit * 2)
+        });
+    } else {
+        steps.push({
+            name: 'Max TFSA (both spouses)',
+            reason: 'At your ' + (combinedRate * 100).toFixed(1) + '% rate, TFSA may be better than RRSP — no deduction to "waste" at a low rate, and all growth is permanently tax-free.',
+            amount: fmtC(v.tfsa.limit * 2)
+        });
+        steps.push({
+            name: 'RRSP contributions',
+            reason: 'Still valuable, but consider whether your future tax rate might be higher. You can also carry forward room to use when your income is higher.',
+            amount: fmtC(rrspLimit)
+        });
+    }
+
+    if (ctx.income > 300000) {
+        steps.push({
+            name: 'Consider family trust',
+            reason: 'Income splitting with adult family members. Estate planning and probate avoidance. Consult a tax professional.',
+            amount: 'Consult advisor'
+        });
+    }
+
+    return steps;
+}
+
+// ─── SHARED RENDERING ───
+
+function getMarginalRate(taxableIncome, brackets) {
+    let rate = 0;
+    for (const b of brackets) {
+        if (taxableIncome > b.min) rate = b.rate;
+    }
+    return rate;
+}
+
+function calculateTax(income, brackets, personalAmount) {
+    const taxable = Math.max(0, income - (personalAmount || 0));
+    let tax = 0;
+    for (const b of brackets) {
+        const inBracket = Math.max(0, Math.min(taxable, b.max) - b.min);
+        if (inBracket > 0) tax += inBracket * b.rate;
+    }
+    return tax;
+}
+
+function renderPriority(steps) {
+    const container = document.getElementById('priority-steps');
+    container.innerHTML = steps.map((s, i) => `
+        <div class="priority-step">
+            <div class="step-number">${i + 1}</div>
+            <div class="step-content">
+                <div class="step-name">${s.name}</div>
+                <div class="step-reason">${s.reason}</div>
+            </div>
+            <div class="step-amount">${s.amount}</div>
+        </div>
+    `).join('');
+}
+
+function getVehicleBadge(id, ctx, loc, marginalRate) {
+    if (loc === 'us') {
+        if (id === 'hsa' && !ctx.hasHDHP) return { cls: 'badge-not-available', text: 'Need HDHP' };
+        if (id === 'hsa' && ctx.hasHDHP) return { cls: 'badge-top-priority', text: 'Top Priority' };
+        if (id === 'megaBackdoor' && !ctx.hasMegaBackdoor) return { cls: 'badge-not-available', text: 'Check Plan' };
+        if (id === 'megaBackdoor' && ctx.hasMegaBackdoor) return { cls: 'badge-great-fit', text: 'Great Fit' };
+        if (id === 'trad401k') return marginalRate >= 0.24 ? { cls: 'badge-top-priority', text: 'Top Priority' } : { cls: 'badge-great-fit', text: 'Great Fit' };
+        if (id === 'roth401k') return marginalRate < 0.24 ? { cls: 'badge-top-priority', text: 'Top Priority' } : { cls: 'badge-great-fit', text: 'Great Fit' };
+        if (id === 'rothIRA') return { cls: 'badge-top-priority', text: 'Top Priority' };
+        if (id === 'tradIRA') {
+            if (ctx.income > 146000) return { cls: 'badge-consider', text: 'Limited Use' };
+            return { cls: 'badge-good-option', text: 'Good Option' };
+        }
+        if (id === 'plan529' && ctx.numChildren > 0) return { cls: 'badge-great-fit', text: 'Great Fit' };
+        if (id === 'plan529') return { cls: 'badge-consider', text: 'Consider' };
+        if (id === 'utma') return { cls: 'badge-consider', text: 'Consider' };
+        if (id === 'irrevocableTrust') return ctx.income > 300000 ? { cls: 'badge-advanced', text: 'Advanced' } : { cls: 'badge-consider', text: 'Consider' };
+        if (id === 'revocableTrust') return { cls: 'badge-good-option', text: 'Good Option' };
+    } else {
+        if (id === 'fhsa' && !ctx.isFirstHomeBuyer) return { cls: 'badge-not-available', text: 'Not Eligible' };
+        if (id === 'fhsa' && ctx.isFirstHomeBuyer) return { cls: 'badge-top-priority', text: 'Top Priority' };
+        if (id === 'resp' && ctx.numChildren > 0) return { cls: 'badge-top-priority', text: 'Top Priority' };
+        if (id === 'resp') return { cls: 'badge-not-available', text: 'No Children' };
+        if (id === 'tfsa') return { cls: 'badge-top-priority', text: 'Top Priority' };
+        if (id === 'rrsp') return marginalRate >= 0.29 ? { cls: 'badge-top-priority', text: 'Top Priority' } : { cls: 'badge-great-fit', text: 'Great Fit' };
+        if (id === 'familyTrust') return ctx.income > 300000 ? { cls: 'badge-advanced', text: 'Advanced' } : { cls: 'badge-consider', text: 'Consider' };
+        if (id === 'bareTrust') return { cls: 'badge-consider', text: 'Consider' };
+    }
+    return { cls: 'badge-good-option', text: 'Good Option' };
+}
+
+function getPersonalizedRec(v, ctx, loc, marginalRate) {
+    const id = v.id;
+    if (loc === 'us') {
+        if (id === 'trad401k') {
+            if (marginalRate >= 0.32) return { type: '', text: 'At your ' + (marginalRate * 100) + '% marginal rate, Traditional 401(k) saves you ' + fmtC(v.limit * marginalRate) + '/year in taxes. Strong choice for you.' };
+            if (marginalRate >= 0.22) return { type: '', text: 'At ' + (marginalRate * 100) + '%, you\'re in a middle ground. Consider splitting between Traditional (tax break now) and Roth (tax-free later). In WA with no state tax, Roth is relatively more attractive.' };
+            return { type: 'info', text: 'At your ' + (marginalRate * 100) + '% rate, the deduction isn\'t as valuable. Consider Roth 401(k) instead — you\'re paying less tax now, so lock in the low rate and get tax-free growth.' };
+        }
+        if (id === 'roth401k') {
+            if (marginalRate <= 0.22) return { type: '', text: 'Strong choice at your ' + (marginalRate * 100) + '% rate. Pay a small amount of tax now, and everything — contributions AND growth — is tax-free forever.' };
+            if (marginalRate >= 0.32) return { type: 'info', text: 'At ' + (marginalRate * 100) + '%, you\'re paying a premium for Roth. Traditional saves more today, but Roth protects against future tax increases. Consider splitting.' };
+            return { type: '', text: 'Good balance at your rate. If you think taxes will be higher when you retire (many experts predict this), Roth gives you certainty.' };
+        }
+        if (id === 'megaBackdoor') {
+            if (!ctx.hasMegaBackdoor) return { type: 'warning', text: 'Check with your HR department if your 401(k) plan allows after-tax contributions AND in-plan Roth conversions (or in-service distributions). Not all plans offer this. If yours does, this is one of the most powerful wealth-building tools available.' };
+            const matchAmt = Math.min(ctx.income * ctx.matchCap, ctx.income) * ctx.matchPct;
+            const space = Math.max(0, v.totalLimit - v.limit - matchAmt);
+            return { type: '', text: 'Your plan allows it! After your $23,500 deferral and ~' + fmtC(matchAmt) + ' employer match, you have approximately ' + fmtC(space) + ' of mega backdoor space. That\'s ' + fmtC(space) + ' more in tax-free Roth every year.' };
+        }
+        if (id === 'rothIRA') {
+            if (ctx.income > v.incomePhaseout.end) return { type: 'info', text: 'Your income exceeds the ' + fmtC(v.incomePhaseout.end) + ' Roth IRA limit. Use the Backdoor Roth strategy: contribute $7,000 to a non-deductible Traditional IRA, then immediately convert to Roth. Legal and widely used. Make sure you don\'t have existing pre-tax IRA balances (pro-rata rule).' };
+            if (ctx.income > v.incomePhaseout.start) return { type: 'warning', text: 'Your income is in the phase-out zone (' + fmtC(v.incomePhaseout.start) + '-' + fmtC(v.incomePhaseout.end) + '). Your contribution limit is reduced. Consider the Backdoor Roth to get the full $7,000.' };
+            return { type: '', text: 'You\'re eligible for the full ' + fmtC(v.limit * 2) + '/year (both spouses). This should be one of your top priorities — flexible, tax-free, no RMDs.' };
+        }
+        if (id === 'hsa') {
+            if (!ctx.hasHDHP) return { type: 'warning', text: 'You need a High Deductible Health Plan to contribute to an HSA. During your next open enrollment, evaluate whether an HDHP makes sense for your family. The triple tax benefit is unmatched — it\'s often worth the higher deductible.' };
+            return { type: '', text: 'At your ' + (marginalRate * 100) + '% rate, maxing your HSA saves ' + fmtC(v.limit * marginalRate) + ' in taxes immediately, plus all growth and medical withdrawals are tax-free. Pro tip: pay medical bills out-of-pocket, invest the HSA, and reimburse yourself decades later for maximum growth.' };
+        }
+        if (id === 'plan529') {
+            if (ctx.numChildren === 0) return { type: 'info', text: 'You can still open a 529 for a future child, niece, nephew, or even yourself. The beneficiary can be changed later.' };
+            return { type: '', text: 'With ' + ctx.numChildren + ' child(ren), 529s give you tax-free growth for education. In WA, this also helps with estate planning — the $3M WA estate tax threshold is much lower than federal. The 529-to-Roth rollover (up to $35K per child, after 15 years) is a great safety valve if they get scholarships.' };
+        }
+        if (id === 'irrevocableTrust') {
+            if (ctx.income > 300000) return { type: '', text: 'With your income level, your estate may approach WA\'s $3M threshold relatively quickly. Start planning now — irrevocable trusts take time to set up and fund. Consult an estate planning attorney.' };
+            return { type: 'info', text: 'WA has a uniquely low estate tax threshold ($3M). Even if this feels premature now, keep it on your radar as your wealth grows. Your home equity counts toward this threshold.' };
+        }
+    } else {
+        if (id === 'rrsp') {
+            const rrspLimit = Math.min(ctx.income * 0.18, v.limit);
+            if (marginalRate >= 0.40) return { type: '', text: 'At your ' + (marginalRate * 100).toFixed(1) + '% combined rate, maxing your RRSP saves ' + fmtC(rrspLimit * marginalRate) + ' in taxes. A spousal RRSP contribution splits income in retirement, which is very powerful for couples with unequal incomes.' };
+            if (marginalRate >= 0.29) return { type: '', text: 'Good return on the RRSP deduction at your rate. Your room is ' + fmtC(rrspLimit) + '. If your spouse earns less, consider spousal RRSP contributions to equalize retirement income.' };
+            return { type: 'info', text: 'At your ' + (marginalRate * 100).toFixed(1) + '% rate, the RRSP deduction is less impactful. Consider whether your income (and rate) might be higher in a few years — if so, carry forward your room and deduct later at a higher rate. Prioritize TFSA in the meantime.' };
+        }
+        if (id === 'tfsa') {
+            return { type: '', text: 'Max this every year — both spouses. That\'s ' + fmtC(v.limit * 2) + '/year of completely tax-free investment growth. Unlike RRSP, withdrawals never count as income, which protects government benefits like CCB (Canada Child Benefit). If you have unused room from prior years, catch up.' };
+        }
+        if (id === 'resp') {
+            if (ctx.numChildren === 0) return { type: 'info', text: 'No children entered. Update your information above if you have children.' };
+            return { type: '', text: 'With ' + ctx.numChildren + ' child(ren), contribute ' + fmtC(v.limit * ctx.numChildren) + '/year to get ' + fmtC(v.cesgMax * ctx.numChildren) + ' in free CESG grants. That\'s an instant 20% guaranteed return. Over 18 years, the CESG alone provides ' + fmtC(v.cesgLifetime * ctx.numChildren) + ' in free money for your kids\' education. If they don\'t go to school, you can roll the growth into your RRSP.' };
+        }
+        if (id === 'fhsa') {
+            if (!ctx.isFirstHomeBuyer) return { type: 'warning', text: 'You indicated you\'re not a first-time buyer. If you haven\'t owned a home in the past 4 calendar years, you may qualify. The double-tax benefit (deduction + tax-free withdrawal) makes this the best home savings vehicle ever created in Canada.' };
+            return { type: '', text: 'Open this account immediately if you haven\'t already — carry-forward room only accumulates after the account is opened. You get a deduction today (' + fmtC(v.limit * marginalRate) + ' savings at your rate) AND tax-free withdrawal for your home. You can combine this with the RRSP Home Buyers\' Plan ($60K) for up to $100K in tax-advantaged home savings.' };
+        }
+        if (id === 'familyTrust') {
+            return { type: 'info', text: 'Family trusts are powerful but complex. Most useful when you have adult children, business income, or substantial investments. The TOSI rules have limited income splitting with minors. Canada has no estate tax, but the deemed disposition at death triggers capital gains — a trust can help manage this. Consult a tax professional.' };
+        }
+    }
+    return null;
+}
+
+function renderVehicles(vehicles, ctx, loc, marginalRate) {
+    const grid = document.getElementById('vehicles-grid');
+    grid.innerHTML = '';
+
+    for (const key of Object.keys(vehicles)) {
+        const v = vehicles[key];
+        const badge = getVehicleBadge(v.id, ctx, loc, marginalRate);
+        const rec = getPersonalizedRec(v, ctx, loc, marginalRate);
+
+        let limitDisplay = '';
+        let limitLabelDisplay = '';
+        if (v.limit) {
+            if (v.id === 'rrsp') {
+                const rrspRoom = Math.min(ctx.income * v.limitPercent, v.limit);
+                limitDisplay = fmtC(rrspRoom);
+                limitLabelDisplay = 'your 2025 room';
+            } else if (v.id === 'resp') {
+                limitDisplay = fmtC(v.limit * ctx.numChildren);
+                limitLabelDisplay = '/yr for ' + ctx.numChildren + ' child(ren)';
+            } else if (v.id === 'rothIRA' || v.id === 'tfsa') {
+                limitDisplay = fmtC(v.limit * 2);
+                limitLabelDisplay = '/yr (both spouses)';
+            } else {
+                limitDisplay = fmtC(v.limit);
+                limitLabelDisplay = v.limitLabel;
+            }
+        } else if (v.id === 'megaBackdoor') {
+            const matchAmt = Math.min(ctx.income * ctx.matchCap, ctx.income) * ctx.matchPct;
+            const space = Math.max(0, (v.totalLimit || 70000) - 23500 - matchAmt);
+            limitDisplay = fmtC(space);
+            limitLabelDisplay = '/yr (varies by match)';
+        } else {
+            limitDisplay = 'No limit';
+            limitLabelDisplay = '';
+        }
+
+        const card = document.createElement('div');
+        card.className = 'vehicle-card';
+        card.innerHTML = `
+            <div class="vehicle-header" onclick="this.parentElement.classList.toggle('expanded')">
+                <div class="vehicle-icon ${v.iconClass}">${v.icon}</div>
+                <div class="vehicle-info">
+                    <div class="vehicle-name">
+                        ${v.name}
+                        <span class="vehicle-badge ${badge.cls}">${badge.text}</span>
+                    </div>
+                    <div class="vehicle-oneliner">${v.oneliner}</div>
+                </div>
+                <div>
+                    <div class="vehicle-limit">${limitDisplay}</div>
+                    <div class="vehicle-limit-label">${limitLabelDisplay}</div>
+                </div>
+                <div class="vehicle-expand-arrow">&#9660;</div>
+            </div>
+            <div class="vehicle-body">
+                <div class="vehicle-body-grid">
+                    <div class="detail-block">
+                        <h4>Tax Treatment</h4>
+                        <ul>
+                            <li><strong>Going in:</strong> ${v.taxContribution}</li>
+                            <li><strong>Growth:</strong> ${v.taxGrowth}</li>
+                            <li><strong>Coming out:</strong> ${v.taxWithdrawal}</li>
+                        </ul>
+                    </div>
+                    <div class="detail-block">
+                        <h4>Best For</h4>
+                        <p>${v.bestFor}</p>
+                    </div>
+                    <div class="detail-block">
+                        <h4>Advantages</h4>
+                        <ul>${v.pros.map(p => `<li class="pro">${p}</li>`).join('')}</ul>
+                    </div>
+                    <div class="detail-block">
+                        <h4>Drawbacks</h4>
+                        <ul>${v.cons.map(c => `<li class="con">${c}</li>`).join('')}</ul>
+                    </div>
+                    <div class="detail-block full-width">
+                        <h4>Important Details</h4>
+                        <p>${v.gotchas}</p>
+                    </div>
+                    ${rec ? `<div class="recommendation-box ${rec.type}"><h4>Your Recommendation</h4><p>${rec.text}</p></div>` : ''}
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    }
+}
+
+function renderCompareDropdowns(vehicles) {
+    const keys = Object.keys(vehicles);
+    const a = document.getElementById('compare-a');
+    const b = document.getElementById('compare-b');
+
+    const prevA = a.value;
+    const prevB = b.value;
+
+    a.innerHTML = keys.map(k => `<option value="${k}">${vehicles[k].name}</option>`).join('');
+    b.innerHTML = keys.map(k => `<option value="${k}">${vehicles[k].name}</option>`).join('');
+
+    if (prevA && keys.includes(prevA)) a.value = prevA;
+    else a.value = keys[0];
+
+    if (prevB && keys.includes(prevB)) b.value = prevB;
+    else b.value = keys.length > 1 ? keys[1] : keys[0];
+
+    a.onchange = () => renderCompare(vehicles);
+    b.onchange = () => renderCompare(vehicles);
+
+    renderCompare(vehicles);
+}
+
+function renderCompare(vehicles) {
+    const aKey = document.getElementById('compare-a').value;
+    const bKey = document.getElementById('compare-b').value;
+    const va = vehicles[aKey];
+    const vb = vehicles[bKey];
+
+    const rows = [
+        ['Contribution Tax', va.taxContribution, vb.taxContribution],
+        ['Growth Tax', va.taxGrowth, vb.taxGrowth],
+        ['Withdrawal Tax', va.taxWithdrawal, vb.taxWithdrawal],
+        ['Annual Limit', va.limit ? fmtC(va.limit) : 'No limit', vb.limit ? fmtC(vb.limit) : 'No limit'],
+        ['Required Distributions', va.rmd || 'N/A', vb.rmd || 'N/A'],
+        ['Best For', va.bestFor, vb.bestFor]
+    ];
+
+    const container = document.getElementById('compare-table');
+    container.innerHTML = `
+        <table class="compare-grid">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>${va.name}</th>
+                    <th>${vb.name}</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.map(r => `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function renderTaxEstimate(ctx, loc) {
+    const container = document.getElementById('tax-estimate');
+
+    if (loc === 'us') {
+        const d = TAX.us;
+        const gross = ctx.income;
+        const deduction = d.standardDeduction;
+        const taxable = Math.max(0, gross - deduction);
+        const tax = calculateTax(gross, d.brackets, deduction);
+        const ctc = Math.min(ctx.numChildren, 10) * 2000;
+        const finalTax = Math.max(0, tax - ctc);
+        const effective = gross > 0 ? (finalTax / gross * 100).toFixed(1) : '0.0';
+
+        container.innerHTML = `
+            <div class="estimate-row"><span>Gross Household Income</span><span>${fmtC(gross)}</span></div>
+            <div class="estimate-row"><span>Standard Deduction (MFJ)</span><span class="negative">-${fmtC(deduction)}</span></div>
+            <div class="estimate-row subtotal"><span>Taxable Income</span><span>${fmtC(taxable)}</span></div>
+            <div class="estimate-row"><span>Federal Income Tax</span><span>${fmtC(tax)}</span></div>
+            <div class="estimate-row"><span>Child Tax Credit (${ctx.numChildren} child${ctx.numChildren !== 1 ? 'ren' : ''})</span><span class="negative">-${fmtC(ctc)}</span></div>
+            <div class="estimate-row total"><span>Estimated Federal Tax</span><span>${fmtC(finalTax)}</span></div>
+            <div class="estimate-row"><span>Effective Tax Rate</span><span>${effective}%</span></div>
+            <div class="estimate-row"><span>WA State Income Tax</span><span>${fmtC(0)} (no state income tax)</span></div>
+            <div class="estimate-row subtotal"><span>Estimated Take-Home</span><span>${fmtC(gross - finalTax)}</span></div>
+        `;
+    } else {
+        const d = TAX.ca;
+        const gross = ctx.income;
+        const fedTax = calculateTax(gross, d.federalBrackets, d.federalPersonalAmount);
+        const provTax = calculateTax(gross, d.provincialBrackets, d.provincialPersonalAmount);
+        const cpp = Math.min(4034 * 2, gross * 0.0595);
+        const cpp2 = gross > 71300 ? Math.min(396 * 2, (Math.min(gross, 81200) - 71300) * 0.04) : 0;
+        const ei = Math.min(1077 * 2, gross * 0.0164);
+        const totalTax = fedTax + provTax + cpp + cpp2 + ei;
+        const effective = gross > 0 ? (totalTax / gross * 100).toFixed(1) : '0.0';
+
+        container.innerHTML = `
+            <div class="estimate-row"><span>Gross Household Income</span><span>${fmtC(gross)}</span></div>
+            <div class="estimate-row"><span>Federal Income Tax</span><span>${fmtC(fedTax)}</span></div>
+            <div class="estimate-row"><span>BC Provincial Income Tax</span><span>${fmtC(provTax)}</span></div>
+            <div class="estimate-row"><span>CPP Contributions (est.)</span><span>${fmtC(cpp + cpp2)}</span></div>
+            <div class="estimate-row"><span>EI Premiums (est.)</span><span>${fmtC(ei)}</span></div>
+            <div class="estimate-row total"><span>Estimated Total Tax & Deductions</span><span>${fmtC(totalTax)}</span></div>
+            <div class="estimate-row"><span>Effective Rate (all-in)</span><span>${effective}%</span></div>
+            <div class="estimate-row subtotal"><span>Estimated Take-Home</span><span>${fmtC(gross - totalTax)}</span></div>
+        `;
+    }
 }

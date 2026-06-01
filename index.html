@@ -3,604 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Tax Planner 2025</title>
+    <title>Family Tax Strategy Planner</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
         <div class="header-content">
-            <h1>Family Tax Planner</h1>
-            <p class="subtitle">Plan smarter, keep more of what you earn</p>
+            <h1>Family Tax Strategy Planner</h1>
+            <div class="location-toggle">
+                <button class="loc-btn active" data-location="us">US (Washington)</button>
+                <button class="loc-btn" data-location="ca">Canada (BC)</button>
+            </div>
         </div>
     </header>
 
     <main>
-        <div class="dashboard" id="dashboard">
-            <div class="summary-card total-tax">
-                <div class="card-label">Estimated Federal Tax</div>
-                <div class="card-value" id="sum-total-tax">$0</div>
-                <div class="card-detail" id="sum-effective-rate">0% effective rate</div>
+        <!-- YOUR SITUATION -->
+        <section class="panel your-situation">
+            <div class="panel-header" id="situation-toggle">
+                <h2>Your Situation</h2>
+                <span class="toggle-arrow">&#9660;</span>
             </div>
-            <div class="summary-card take-home">
-                <div class="card-label">Estimated Take-Home</div>
-                <div class="card-value" id="sum-take-home">$0</div>
-                <div class="card-detail" id="sum-take-home-monthly">$0 / month</div>
-            </div>
-            <div class="summary-card credits-total">
-                <div class="card-label">Total Credits</div>
-                <div class="card-value" id="sum-credits">$0</div>
-                <div class="card-detail" id="sum-credits-detail">Tax credits applied</div>
-            </div>
-            <div class="summary-card refund-owe">
-                <div class="card-label">Refund / Amount Owed</div>
-                <div class="card-value" id="sum-refund">$0</div>
-                <div class="card-detail" id="sum-refund-detail">Based on withholdings</div>
-            </div>
-        </div>
-
-        <div class="tabs">
-            <button class="tab active" data-tab="income">Income</button>
-            <button class="tab" data-tab="deductions">Deductions</button>
-            <button class="tab" data-tab="credits">Credits</button>
-            <button class="tab" data-tab="retirement">Retirement</button>
-            <button class="tab" data-tab="withholding">Withholding</button>
-            <button class="tab" data-tab="breakdown">Tax Breakdown</button>
-        </div>
-
-        <!-- INCOME TAB -->
-        <section class="tab-content active" id="tab-income">
-            <div class="section-header">
-                <h2>Filing Status & Income</h2>
-                <p>Enter your household income from all sources</p>
-            </div>
-
-            <div class="form-group">
-                <label for="filing-status">Filing Status</label>
-                <select id="filing-status">
-                    <option value="married_jointly" selected>Married Filing Jointly</option>
-                    <option value="married_separately">Married Filing Separately</option>
-                    <option value="single">Single</option>
-                    <option value="head_of_household">Head of Household</option>
-                </select>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="num-dependents">Number of Children (under 17)</label>
-                    <input type="number" id="num-dependents" value="1" min="0" max="20">
-                </div>
-                <div class="form-group">
-                    <label for="num-other-dependents">Other Dependents</label>
-                    <input type="number" id="num-other-dependents" value="0" min="0" max="20">
-                </div>
-            </div>
-
-            <h3>Employment Income</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="wages-1">Your W-2 Wages</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="wages-1" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="wages-2">Spouse W-2 Wages</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="wages-2" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-            </div>
-
-            <h3>Self-Employment / Freelance</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="self-employment-income">Gross Self-Employment Income</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="self-employment-income" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="self-employment-expenses">Business Expenses</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="self-employment-expenses" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-            </div>
-
-            <h3>Investment Income</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="interest-income">Interest Income</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="interest-income" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="dividend-income">Qualified Dividends</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="dividend-income" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="short-term-gains">Short-Term Capital Gains</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="short-term-gains" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="long-term-gains">Long-Term Capital Gains</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="long-term-gains" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-            </div>
-
-            <h3>Other Income</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="other-income">Other Taxable Income</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="other-income" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Rental income, alimony received, etc.</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- DEDUCTIONS TAB -->
-        <section class="tab-content" id="tab-deductions">
-            <div class="section-header">
-                <h2>Deductions</h2>
-                <p>Choose standard or itemized deductions</p>
-            </div>
-
-            <div class="deduction-toggle">
-                <label class="toggle-option">
-                    <input type="radio" name="deduction-type" value="standard" checked>
-                    <span class="toggle-label">
-                        <strong>Standard Deduction</strong>
-                        <span id="standard-deduction-amount">$30,000</span>
-                    </span>
-                </label>
-                <label class="toggle-option">
-                    <input type="radio" name="deduction-type" value="itemized">
-                    <span class="toggle-label">
-                        <strong>Itemized Deductions</strong>
-                        <span id="itemized-total-display">$0</span>
-                    </span>
-                </label>
-            </div>
-
-            <div id="itemized-section" class="hidden">
-                <div class="form-row">
+            <div class="panel-body" id="situation-body">
+                <div class="form-grid">
                     <div class="form-group">
-                        <label for="mortgage-interest">Mortgage Interest</label>
+                        <label for="household-income">Household Income</label>
                         <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="mortgage-interest" class="currency-input" value="0" inputmode="numeric">
+                            <span id="currency-symbol">$</span>
+                            <input type="text" id="household-income" class="currency-input" value="200000" inputmode="numeric">
                         </div>
+                        <span class="help-text">Combined gross annual income</span>
                     </div>
                     <div class="form-group">
-                        <label for="salt-deduction">State & Local Taxes (SALT)</label>
+                        <label for="spouse-income">Spouse Income (of total)</label>
                         <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="salt-deduction" class="currency-input" value="0" inputmode="numeric">
+                            <span id="currency-symbol-2">$</span>
+                            <input type="text" id="spouse-income" class="currency-input" value="0" inputmode="numeric">
                         </div>
-                        <span class="help-text">Capped at $10,000</span>
+                        <span class="help-text">Leave 0 if single income</span>
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="charitable-cash">Charitable Donations (Cash)</label>
+                        <label for="num-children">Number of Children</label>
+                        <input type="number" id="num-children" value="2" min="0" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="your-age">Your Age</label>
+                        <input type="number" id="your-age" value="35" min="18" max="80">
+                    </div>
+                    <div class="form-group">
+                        <label for="employer-match">Employer Match Rate</label>
                         <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="charitable-cash" class="currency-input" value="0" inputmode="numeric">
+                            <input type="number" id="employer-match" value="50" min="0" max="200" step="5">
+                            <span>%</span>
                         </div>
+                        <span class="help-text">E.g., 50% = 50 cents per dollar you contribute</span>
                     </div>
                     <div class="form-group">
-                        <label for="charitable-noncash">Charitable Donations (Non-Cash)</label>
+                        <label for="match-cap">Match On First __ % of Salary</label>
                         <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="charitable-noncash" class="currency-input" value="0" inputmode="numeric">
+                            <input type="number" id="match-cap" value="6" min="0" max="100" step="0.5">
+                            <span>%</span>
                         </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="medical-expenses">Medical Expenses (above 7.5% AGI)</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="medical-expenses" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                        <span class="help-text">Only the amount exceeding 7.5% of AGI is deductible</span>
+                        <span class="help-text">Your contributions up to this % get matched</span>
                     </div>
                     <div class="form-group">
-                        <label for="other-itemized">Other Itemized Deductions</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="other-itemized" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="info-box" id="deduction-recommendation">
-                <strong>Recommendation:</strong> Based on your inputs, the standard deduction saves you more. We're using that automatically.
-            </div>
-
-            <h3>Above-the-Line Deductions</h3>
-            <p class="section-note">These reduce your AGI regardless of standard vs. itemized</p>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="student-loan-interest">Student Loan Interest</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="student-loan-interest" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Up to $2,500</span>
-                </div>
-                <div class="form-group">
-                    <label for="hsa-contribution">HSA Contributions</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="hsa-contribution" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Family: $8,550 max for 2025</span>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="educator-expenses">Educator Expenses</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="educator-expenses" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Up to $300 per educator</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- CREDITS TAB -->
-        <section class="tab-content" id="tab-credits">
-            <div class="section-header">
-                <h2>Tax Credits</h2>
-                <p>Credits reduce your tax bill dollar-for-dollar</p>
-            </div>
-
-            <div class="credit-card">
-                <div class="credit-header">
-                    <h3>Child Tax Credit</h3>
-                    <span class="credit-value" id="ctc-value">$0</span>
-                </div>
-                <p class="credit-description">$2,000 per qualifying child under 17. Phases out at $400,000 (MFJ) / $200,000 (other).</p>
-                <div class="credit-auto">Auto-calculated from your dependents above</div>
-            </div>
-
-            <div class="credit-card">
-                <div class="credit-header">
-                    <h3>Child & Dependent Care Credit</h3>
-                    <span class="credit-value" id="cdcc-value">$0</span>
-                </div>
-                <p class="credit-description">Credit for daycare, preschool, or after-school care expenses while you work.</p>
-                <div class="form-group">
-                    <label for="dependent-care-expenses">Care Expenses Paid</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="dependent-care-expenses" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Max $3,000 for 1 child, $6,000 for 2+</span>
-                </div>
-            </div>
-
-            <div class="credit-card">
-                <div class="credit-header">
-                    <h3>Earned Income Tax Credit (EITC)</h3>
-                    <span class="credit-value" id="eitc-value">$0</span>
-                </div>
-                <p class="credit-description">For low-to-moderate income families. Auto-calculated based on income and dependents.</p>
-                <div class="credit-auto">Auto-calculated from your income and filing status</div>
-            </div>
-
-            <div class="credit-card">
-                <div class="credit-header">
-                    <h3>American Opportunity Credit (Education)</h3>
-                    <span class="credit-value" id="aoc-value">$0</span>
-                </div>
-                <p class="credit-description">Up to $2,500 per student for first 4 years of college.</p>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="education-expenses">Qualified Education Expenses</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="education-expenses" class="currency-input" value="0" inputmode="numeric">
-                        </div>
+                        <label for="has-hdhp">Have a High Deductible Health Plan?</label>
+                        <select id="has-hdhp">
+                            <option value="yes">Yes</option>
+                            <option value="no" selected>No</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="num-students">Number of Students</label>
-                        <input type="number" id="num-students" value="0" min="0" max="10">
+                        <label for="has-mega-backdoor">401(k) Allows After-Tax Contributions?</label>
+                        <select id="has-mega-backdoor">
+                            <option value="yes">Yes</option>
+                            <option value="no" selected>No / Not Sure</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-
-            <div class="credit-card">
-                <div class="credit-header">
-                    <h3>Other Credits</h3>
-                    <span class="credit-value" id="other-credits-value">$0</span>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="ev-credit">Clean Vehicle Credit</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="ev-credit" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                        <span class="help-text">Up to $7,500 for qualifying EVs</span>
+                    <div class="form-group ca-only hidden">
+                        <label for="is-first-home-buyer">First-Time Home Buyer?</label>
+                        <select id="is-first-home-buyer">
+                            <option value="yes">Yes</option>
+                            <option value="no" selected>No</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="energy-credit">Residential Energy Credit</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="energy-credit" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                        <span class="help-text">Solar, heat pumps, insulation, etc.</span>
+                        <label for="risk-tolerance">Investment Timeline to Retirement</label>
+                        <select id="risk-tolerance">
+                            <option value="long" selected>20+ years</option>
+                            <option value="medium">10-20 years</option>
+                            <option value="short">Under 10 years</option>
+                        </select>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- RETIREMENT TAB -->
-        <section class="tab-content" id="tab-retirement">
-            <div class="section-header">
-                <h2>Retirement Planning</h2>
-                <p>See how retirement contributions lower your tax bill</p>
-            </div>
-
-            <div class="retirement-card">
-                <h3>401(k) / 403(b)</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="traditional-401k">Your Traditional 401(k)</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="traditional-401k" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="spouse-401k">Spouse Traditional 401(k)</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="spouse-401k" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
+        <!-- STRATEGY SUMMARY -->
+        <section class="panel strategy-summary">
+            <h2>Your Strategy at a Glance</h2>
+            <div class="strategy-dashboard">
+                <div class="strat-card">
+                    <div class="strat-label">Estimated Marginal Rate</div>
+                    <div class="strat-value" id="marginal-rate">22%</div>
+                    <div class="strat-detail" id="marginal-detail">Federal only</div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="roth-401k">Your Roth 401(k)</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="roth-401k" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="spouse-roth-401k">Spouse Roth 401(k)</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="spouse-roth-401k" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
+                <div class="strat-card">
+                    <div class="strat-label">Max Tax-Sheltered Space</div>
+                    <div class="strat-value" id="total-shelter">$0</div>
+                    <div class="strat-detail" id="shelter-detail">Across all vehicles</div>
                 </div>
-                <span class="help-text">2025 limit: $23,500 per person ($31,000 if age 50+)</span>
-                <div class="tax-impact" id="impact-401k">
-                    <span class="impact-label">Tax savings from Traditional 401(k):</span>
-                    <span class="impact-value">$0</span>
+                <div class="strat-card">
+                    <div class="strat-label">Potential Tax Savings</div>
+                    <div class="strat-value" id="potential-savings">$0</div>
+                    <div class="strat-detail">If you max all vehicles</div>
+                </div>
+                <div class="strat-card">
+                    <div class="strat-label">Free Money Available</div>
+                    <div class="strat-value" id="free-money">$0</div>
+                    <div class="strat-detail" id="free-money-detail">Employer match + gov grants</div>
                 </div>
             </div>
 
-            <div class="retirement-card">
-                <h3>IRA</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="traditional-ira">Your Traditional IRA</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="traditional-ira" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="spouse-ira">Spouse Traditional IRA</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="spouse-ira" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="roth-ira">Your Roth IRA</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="roth-ira" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="spouse-roth-ira">Spouse Roth IRA</label>
-                        <div class="input-prefix">
-                            <span>$</span>
-                            <input type="text" id="spouse-roth-ira" class="currency-input" value="0" inputmode="numeric">
-                        </div>
-                    </div>
-                </div>
-                <span class="help-text">2025 limit: $7,000 per person ($8,000 if age 50+). Roth doesn't reduce taxes now but grows tax-free.</span>
-                <div class="tax-impact" id="impact-ira">
-                    <span class="impact-label">Tax savings from Traditional IRA:</span>
-                    <span class="impact-value">$0</span>
-                </div>
-            </div>
-
-            <div class="retirement-card">
-                <h3>529 College Savings</h3>
-                <div class="form-group">
-                    <label for="plan-529">Annual 529 Contribution</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="plan-529" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                </div>
-                <div class="info-box">
-                    <strong>Note:</strong> 529 contributions are not deductible on federal taxes, but many states offer a state tax deduction. Earnings grow tax-free when used for education expenses. Check your state's rules.
-                </div>
-            </div>
-
-            <div class="info-box highlight">
-                <strong>Planning Tip:</strong> <span id="retirement-tip">Contribute to tax-deferred accounts like a Traditional 401(k) or IRA to lower your taxable income today. Roth contributions don't save taxes now, but withdrawals in retirement are tax-free.</span>
+            <div class="priority-order" id="priority-order">
+                <h3>Recommended Priority Order</h3>
+                <div class="priority-steps" id="priority-steps"></div>
             </div>
         </section>
 
-        <!-- WITHHOLDING TAB -->
-        <section class="tab-content" id="tab-withholding">
-            <div class="section-header">
-                <h2>Withholding Check</h2>
-                <p>Compare what you've paid to what you'll owe</p>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="federal-withheld">Federal Tax Withheld (Year-to-Date)</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="federal-withheld" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Check your most recent pay stub(s)</span>
-                </div>
-                <div class="form-group">
-                    <label for="estimated-payments">Estimated Tax Payments Made</label>
-                    <div class="input-prefix">
-                        <span>$</span>
-                        <input type="text" id="estimated-payments" class="currency-input" value="0" inputmode="numeric">
-                    </div>
-                    <span class="help-text">Quarterly payments (1040-ES)</span>
-                </div>
-            </div>
-
-            <div class="withholding-result" id="withholding-result">
-                <div class="withholding-bar">
-                    <div class="bar-paid" id="bar-paid" style="width: 0%">
-                        <span>Paid: $0</span>
-                    </div>
-                    <div class="bar-owed" id="bar-owed">
-                        <span>Owed: $0</span>
-                    </div>
-                </div>
-                <div class="withholding-summary" id="withholding-summary">
-                    <p>Enter your withholding amounts above to see if you're on track.</p>
-                </div>
-            </div>
-
-            <div class="info-box" id="withholding-tip">
-                <strong>Tip:</strong> Aim to neither owe too much nor get a huge refund. A large refund means you gave the IRS an interest-free loan. Consider adjusting your W-4 if you're significantly over or under.
-            </div>
+        <!-- TAX VEHICLES -->
+        <section class="panel">
+            <h2>Tax Vehicles — Deep Dive</h2>
+            <p class="section-subtitle">Click any card to see details, tradeoffs, and how it fits your situation</p>
+            <div class="vehicles-grid" id="vehicles-grid"></div>
         </section>
 
-        <!-- BREAKDOWN TAB -->
-        <section class="tab-content" id="tab-breakdown">
-            <div class="section-header">
-                <h2>Tax Breakdown</h2>
-                <p>See exactly how your taxes are calculated</p>
+        <!-- SIDE BY SIDE -->
+        <section class="panel">
+            <h2>Compare Vehicles</h2>
+            <p class="section-subtitle">See how different accounts stack up against each other</p>
+            <div class="compare-controls">
+                <select id="compare-a"></select>
+                <span class="vs-label">vs</span>
+                <select id="compare-b"></select>
             </div>
+            <div class="compare-table" id="compare-table"></div>
+        </section>
 
-            <div class="breakdown-table">
-                <div class="breakdown-row header-row">
-                    <span>Item</span>
-                    <span>Amount</span>
-                </div>
-                <div class="breakdown-row" id="bk-gross-income">
-                    <span>Gross Income</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-adjustments">
-                    <span>Adjustments (Above-the-Line)</span>
-                    <span>-$0</span>
-                </div>
-                <div class="breakdown-row subtotal" id="bk-agi">
-                    <span>Adjusted Gross Income (AGI)</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-deduction">
-                    <span>Deduction (Standard)</span>
-                    <span>-$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-qbi">
-                    <span>QBI Deduction (if applicable)</span>
-                    <span>-$0</span>
-                </div>
-                <div class="breakdown-row subtotal" id="bk-taxable-income">
-                    <span>Taxable Income</span>
-                    <span>$0</span>
-                </div>
-
-                <div class="breakdown-row header-row bracket-header">
-                    <span>Tax Bracket</span>
-                    <span>Tax</span>
-                </div>
-                <div id="bracket-rows"></div>
-
-                <div class="breakdown-row subtotal" id="bk-income-tax">
-                    <span>Income Tax (before credits)</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-se-tax">
-                    <span>Self-Employment Tax</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-ltcg-tax">
-                    <span>Long-Term Capital Gains Tax</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-niit">
-                    <span>Net Investment Income Tax (3.8%)</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-credits">
-                    <span>Total Tax Credits</span>
-                    <span class="credit-amount">-$0</span>
-                </div>
-                <div class="breakdown-row total" id="bk-total-tax">
-                    <span>Total Federal Tax</span>
-                    <span>$0</span>
-                </div>
-                <div class="breakdown-row" id="bk-marginal-rate">
-                    <span>Marginal Tax Rate</span>
-                    <span>0%</span>
-                </div>
-                <div class="breakdown-row" id="bk-effective-rate">
-                    <span>Effective Tax Rate</span>
-                    <span>0%</span>
-                </div>
-            </div>
-
-            <div class="bracket-visual" id="bracket-visual">
-                <h3>Your Tax Brackets</h3>
-                <div class="bracket-chart" id="bracket-chart"></div>
-            </div>
+        <!-- TAX ESTIMATE -->
+        <section class="panel">
+            <h2>Tax Estimate</h2>
+            <p class="section-subtitle">Rough estimate of your tax situation</p>
+            <div class="tax-estimate" id="tax-estimate"></div>
         </section>
     </main>
 
     <footer>
-        <p>This tool provides estimates for federal income tax planning purposes only. It is not tax advice. Consult a qualified tax professional for your specific situation. Based on 2025 tax law.</p>
+        <p>This tool provides estimates for tax planning purposes only. It is not tax, legal, or financial advice. Tax laws change frequently. Consult a qualified tax professional or financial advisor for your specific situation. Based on 2025 tax law.</p>
     </footer>
 
-    <script src="tax-engine.js"></script>
+    <script src="tax-data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
